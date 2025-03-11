@@ -1,0 +1,13 @@
+
+character03_bullet.png
+size: 128,128
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+dandao/dandao_00000
+  rotate: false
+  xy: 2, 2
+  size: 93, 119
+  orig: 128, 160
+  offset: 16, 19
+  index: -1

@@ -1,0 +1,43 @@
+{
+"skeleton": { "hash": "/xkvhzYNzYwbIpsMl35doNmpO+s", "spine": "3.8.99", "images": "./images/", "audio": "" },
+"bones": [
+	{ "name": "root" },
+	{ "name": "zong", "parent": "root", "color": "ff0000ff" },
+	{ "name": "bullet", "parent": "zong", "color": "ff0000ff" }
+],
+"slots": [
+	{ "name": "bullet/bullet_00000", "bone": "bullet" }
+],
+"skins": [
+	{
+		"name": "default",
+		"attachments": {
+			"bullet/bullet_00000": {
+				"bullet/bullet_00000": { "width": 141, "height": 92 },
+				"bullet/bullet_00001": { "width": 141, "height": 92 },
+				"bullet/bullet_00002": { "width": 141, "height": 92 },
+				"bullet/bullet_00003": { "width": 141, "height": 92 },
+				"bullet/bullet_00004": { "width": 141, "height": 92 },
+				"bullet/bullet_00005": { "width": 141, "height": 92 }
+			}
+		}
+	}
+],
+"animations": {
+	"bullet": {
+		"slots": {
+			"bullet/bullet_00000": {
+				"attachment": [
+					{ "name": "bullet/bullet_00000" },
+					{ "time": 0.0333, "name": "bullet/bullet_00001" },
+					{ "time": 0.0667, "name": "bullet/bullet_00002" },
+					{ "time": 0.1, "name": "bullet/bullet_00003" },
+					{ "time": 0.1333, "name": "bullet/bullet_00004" },
+					{ "time": 0.1667, "name": "bullet/bullet_00005" },
+					{ "time": 0.2, "name": "bullet/bullet_00000" }
+				]
+			}
+		}
+	}
+}
+}
