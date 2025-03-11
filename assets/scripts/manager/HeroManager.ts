@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, Contact2DType, IPhysics2DContact, CircleCollider2D, sp, log, UITransform, Sprite, Collider2D, find } from 'cc';
+import { _decorator, Component, Node, Vec3, Contact2DType, IPhysics2DContact, CircleCollider2D, sp, log, UITransform, Sprite, Collider2D, find, tween, v2, game } from 'cc';
 import { HeroModel } from '../model/HeroModel';
 import { EnemyManager } from './EnemyManager';
 const { ccclass, property } = _decorator;
@@ -15,9 +15,12 @@ export class HeroManager extends Component {
 
 
     @property
-    private attackInterval: number = 1; // 攻击间隔（秒）
+    public attackInterval: number = 1; // 攻击间隔（秒）
 
     public heroModel: HeroModel = null; // 英雄数据模型
+
+    public safeMove = true;
+
 
     private targetEnemy: Node = null; // 当前目标敌人
     private isAttacking: boolean = false; // 是否正在攻击
@@ -31,6 +34,8 @@ export class HeroManager extends Component {
     private animationNode: Node = null; // 动画节点
     private attackRangeNode: Node = null; // 碰撞节点
 
+
+
     start() {
         //添加标签
         this.node["pid"] = "hero";
@@ -42,8 +47,42 @@ export class HeroManager extends Component {
         this.initAttackRangeDetection();
         // 初始化血条
         this.initHealthBar();
+
+        // 添加波次事件监听
+        game.on("WaveComplete", this.onWaveComplete, this);
+        game.on("WaveReady", this.onWaveReady, this);
     }
 
+    onDestroy() {
+        game.off("WaveComplete", this.onWaveComplete, this);
+        game.off("WaveReady", this.onWaveReady, this);
+    }
+
+    private onWaveComplete = () => {
+        // 禁止自主移动
+        this.safeMove = false;
+
+        // 播放移动动画
+        this.playAnimation('run');
+
+        // 快速移动到初始位置
+        tween(this.node)
+            .to(2, { position: new Vec3(-400, 0, 0) })
+            .call(() => {
+                // 播放待机动画
+                this.playAnimation('stand');
+            })
+            .start();
+        // 发送背景快速移动事件
+        game.emit("BackgroundContorllerState", true, 400);
+    }
+
+    private onWaveReady = () => {
+        // 恢复自主移动
+        this.safeMove = true;
+        // 停止背景快速移动
+        game.emit("BackgroundContorllerState", false, 200);
+    }
     update(deltaTime: number) {
         // return
         // 更新攻击计时器
@@ -243,7 +282,9 @@ export class HeroManager extends Component {
         if (this.animationNode.scale.x == -1) {
             this.animationNode.scale = new Vec3(Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
         }
-
+        if (!this.safeMove) {
+            return
+        }
         // 简单的向右移动
         const currentPos = this.node.position;
         const newPos = new Vec3(

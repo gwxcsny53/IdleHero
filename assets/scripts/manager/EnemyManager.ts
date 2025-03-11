@@ -18,7 +18,7 @@ export class EnemyManager extends Component {
     private isAttacking: boolean = false; // 是否正在攻击
     private attackTimer: number = 0; // 攻击计时器
     private heroesInRange: Node[] = []; // 攻击范围内的英雄
-    private isDead: boolean = false; // 是否已死亡
+    public isDead: boolean = false; // 是否已死亡
 
     private healthBarFill: Node = null; // 血条填充部分节点
     /**血条最大长度 */
@@ -343,7 +343,7 @@ export class EnemyManager extends Component {
         // 延迟销毁敌人节点
         this.scheduleOnce(() => {
             this.node.destroy();
-        }, 2); // 2秒后销毁，给死亡动画播放的时间
+        }, 1); // 2秒后销毁，给死亡动画播放的时间
     }
 
     /**

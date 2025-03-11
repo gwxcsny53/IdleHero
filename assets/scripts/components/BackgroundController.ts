@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, tween, Tween, log } from 'cc';
+import { _decorator, Component, Node, Vec3, tween, Tween, log, game, EPSILON } from 'cc';
 const { ccclass, property } = _decorator;
 
 /**
@@ -28,6 +28,8 @@ export class BackgroundController extends Component {
     start() {
         // 记录原始位置
         this.originalPosition.set(this.node.position);
+        //注册监听
+        game.on("BackgroundContorllerState", this.setMoveState.bind(this), this.node);
     }
 
     update(deltaTime: number) {
@@ -52,6 +54,17 @@ export class BackgroundController extends Component {
             } else if (this.direction.x > 0 && newPos.x >= this.resetPositionX) {
                 this.resetPosition();
             }
+        }
+    }
+
+
+    public setMoveState(state, speed) {
+        log("setMove state!!!", state)
+        if (state) {
+            this.moveSpeed = speed;
+            this.startMoving();
+        } else {
+            this.pauseMoving();
         }
     }
 
