@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Vec3, Contact2DType, IPhysics2DContact, CircleCollider2D, sp, log, UITransform, Sprite, Collider2D, find, tween, v2, game } from 'cc';
 import { HeroModel } from '../model/HeroModel';
 import { EnemyManager } from './EnemyManager';
+import { BaseBattleHelper } from '../utils/BaseBattleHelper';
 const { ccclass, property } = _decorator;
 
 /**
@@ -11,9 +12,6 @@ const { ccclass, property } = _decorator;
 export class HeroManager extends Component {
     @property
     public moveDirection: number = 1; // 移动方向 1 向右 -1 向左
-
-
-
     @property
     public attackInterval: number = 1; // 攻击间隔（秒）
 
@@ -28,8 +26,10 @@ export class HeroManager extends Component {
     private enemiesInRange: Node[] = []; // 攻击范围内的敌人
 
     private healthBarFill: Node = null; // 血条填充部分节点
+    private whiteHealthBarFill: Node = null; // 新增白色过渡血条
     /**血条最大长度 */
     private healthBarMaxWidth = 0;
+    private previousHealthPercent: number = 1; // 记录上次血量百分比
 
     private animationNode: Node = null; // 动画节点
     private attackRangeNode: Node = null; // 碰撞节点
@@ -70,7 +70,7 @@ export class HeroManager extends Component {
             .to(2, { position: new Vec3(-400, 0, 0) })
             .call(() => {
                 // 播放待机动画
-                this.playAnimation('stand');
+                this.playAnimation('idle');
             })
             .start();
         // 发送背景快速移动事件
@@ -216,13 +216,14 @@ export class HeroManager extends Component {
         const targetPos = this.targetEnemy.position;
         const selfPos = this.node.position;
 
+        const scale = this.animationNode.scale;
         // 根据目标位置调整朝向
         if (targetPos.x > selfPos.x) {
             // 目标在右边，设置为正向
-            this.animationNode.scale = new Vec3(Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
+            this.animationNode.scale = new Vec3(Math.abs(scale.x), scale.y, scale.z);
         } else {
             // 目标在左边，设置为反向
-            this.animationNode.scale = new Vec3(-Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
+            this.animationNode.scale = new Vec3(-Math.abs(scale.x), scale.y, scale.z);
         }
     }
 
@@ -234,7 +235,7 @@ export class HeroManager extends Component {
         this.attackTimer = 0;
 
         // 播放攻击动画
-        this.playAnimation('skill');
+        this.playAnimation('attack');
     }
 
     /**
@@ -244,7 +245,7 @@ export class HeroManager extends Component {
         this.isAttacking = false;
 
         // 播放待机动画
-        this.playAnimation('stand');
+        this.playAnimation('idle');
     }
 
     /**
@@ -270,7 +271,7 @@ export class HeroManager extends Component {
             enemyManager.takeDamage(this.heroModel.attack);
 
             // 播放攻击动画
-            this.playAnimation('skill');
+            this.playAnimation('attack');
         }
     }
 
@@ -279,8 +280,9 @@ export class HeroManager extends Component {
      */
     private move(deltaTime: number): void {
         //判断朝向
-        if (this.animationNode.scale.x == -1) {
-            this.animationNode.scale = new Vec3(Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
+        const scale = this.animationNode.scale;
+        if (scale.x < 0) {
+            this.animationNode.scale = new Vec3(Math.abs(scale.x), scale.y, scale.z);
         }
         if (!this.safeMove) {
             return
@@ -303,18 +305,20 @@ export class HeroManager extends Component {
      * @param animName 动画名称
      */
     private playAnimation(animName: string): void {
-
-        if (animName == "hit" || animName == "die" || animName == "run") {
+        if (animName == "hit") {
             return
         }
-
         if (!this.animationNode) return;
-
-        // 如果当前不是这个动画，则切换
-        if (animName) {
-            const skeleton: sp.Skeleton = this.animationNode.getComponent(sp.Skeleton);
-            skeleton.setAnimation(0, animName, false);
+        const skeleton: sp.Skeleton = this.animationNode.getComponent(sp.Skeleton);
+        const nowAnimName = skeleton.animation;
+        if (animName == "run") {
+            if (nowAnimName === animName) {
+                return
+            }
+            skeleton.setAnimation(0, animName, true);
+            return
         }
+        skeleton.setAnimation(0, animName, false);
     }
 
     /**
@@ -322,9 +326,13 @@ export class HeroManager extends Component {
      */
     private initHealthBar(): void {
         this.healthBarFill = find("healthBar/Fill", this.node);
+        this.whiteHealthBarFill = find("healthBar/WhiteFill", this.node);
         this.healthBarMaxWidth = this.healthBarFill.getComponent(UITransform).width;
-        if (!this.healthBarFill) return;
-        // 确保血条初始状态是满的
+        // 初始化白色血条
+        if (this.whiteHealthBarFill) {
+            const whiteTransform = this.whiteHealthBarFill.getComponent(UITransform);
+            whiteTransform.width = this.healthBarMaxWidth;
+        }
         this.updateHealthBar();
     }
 
@@ -336,13 +344,16 @@ export class HeroManager extends Component {
 
         // 计算血量百分比
         const healthPercent = this.heroModel.currentHp / this.heroModel.maxHp;
-
-        // 更新血条填充宽度
         const uiTransform = this.healthBarFill.getComponent(UITransform);
-        if (uiTransform) {
-            const maxWidth = this.healthBarMaxWidth;
-            uiTransform.width = maxWidth * healthPercent;
+        // 更新血条填充宽度
+        // 血量减少时触发白色过渡动画
+        if (healthPercent < this.previousHealthPercent) {
+            BaseBattleHelper.showDamageEffect(this.whiteHealthBarFill, this.healthBarMaxWidth, this.previousHealthPercent, healthPercent)
         }
+        if (uiTransform) {
+            uiTransform.width = this.healthBarMaxWidth * healthPercent;
+        }
+        this.previousHealthPercent = healthPercent;
     }
 
     /**
@@ -384,7 +395,7 @@ export class HeroManager extends Component {
      */
     private die(): void {
         // 播放死亡动画
-        this.playAnimation('die');
+        this.playAnimation('dead');
 
         // 禁用碰撞和行为
         this.enabled = false;

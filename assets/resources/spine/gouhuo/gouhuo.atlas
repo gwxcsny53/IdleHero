@@ -1,0 +1,48 @@
+
+gouhuo.png
+size: 512, 256
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+gouhuo1
+  rotate: false
+  xy: 264, 158
+  size: 186, 63
+  orig: 188, 64
+  offset: 1, 1
+  index: -1
+gouhuo2
+  rotate: false
+  xy: 264, 38
+  size: 110, 118
+  orig: 110, 118
+  offset: 0, 0
+  index: -1
+huo_lizi
+  rotate: false
+  xy: 452, 193
+  size: 28, 28
+  orig: 32, 32
+  offset: 2, 2
+  index: -1
+huoguang
+  rotate: false
+  xy: 2, 21
+  size: 260, 200
+  orig: 276, 212
+  offset: 8, 6
+  index: -1
+yingzi
+  rotate: false
+  xy: 2, 2
+  size: 147, 17
+  orig: 147, 17
+  offset: 0, 0
+  index: -1
+yinhuochong
+  rotate: false
+  xy: 482, 193
+  size: 28, 28
+  orig: 32, 32
+  offset: 2, 2
+  index: -1

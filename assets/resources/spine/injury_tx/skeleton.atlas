@@ -1,0 +1,48 @@
+
+skeleton.png
+size: 1024,256
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+injury
+  rotate: false
+  xy: 884, 69
+  size: 81, 81
+  orig: 81, 81
+  offset: 0, 0
+  index: -1
+injury_tx_00000
+  rotate: false
+  xy: 884, 152
+  size: 110, 99
+  orig: 293, 261
+  offset: 95, 81
+  index: -1
+injury_tx_00001
+  rotate: true
+  xy: 694, 41
+  size: 210, 188
+  orig: 293, 261
+  offset: 44, 38
+  index: -1
+injury_tx_00002
+  rotate: true
+  xy: 488, 22
+  size: 229, 204
+  orig: 293, 261
+  offset: 31, 30
+  index: -1
+injury_tx_00003
+  rotate: true
+  xy: 259, 2
+  size: 249, 227
+  orig: 293, 261
+  offset: 20, 16
+  index: -1
+injury_tx_00004
+  rotate: false
+  xy: 2, 18
+  size: 255, 233
+  orig: 293, 261
+  offset: 18, 12
+  index: -1

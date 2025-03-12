@@ -1,6 +1,7 @@
-import { _decorator, Component, Node, Animation, Vec3, Contact2DType, IPhysics2DContact, CircleCollider2D, sp, log, SkeletalAnimation, UITransform, Sprite, Collider2D, find } from 'cc';
+import { _decorator, Component, Node, Animation, Vec3, Contact2DType, IPhysics2DContact, CircleCollider2D, sp, log, SkeletalAnimation, UITransform, Sprite, Collider2D, find, tween, easing } from 'cc';
 import { EnemyModel } from '../model/EnemyModel';
 import { HeroManager } from './HeroManager';
+import { BaseBattleHelper } from '../utils/BaseBattleHelper';
 const { ccclass, property } = _decorator;
 
 /**
@@ -9,8 +10,7 @@ const { ccclass, property } = _decorator;
  */
 @ccclass('EnemyManager')
 export class EnemyManager extends Component {
-    @property
-    public moveDirection: number = 1; // 移动方向 1 向右 -1 向左
+    public moveDirection: number = -1; // 移动方向 1 向右 -1 向左
     @property
     private attackInterval: number = 1.5; // 攻击间隔（秒）
     public enemyModel: EnemyModel = null; // 敌人数据模型
@@ -21,8 +21,10 @@ export class EnemyManager extends Component {
     public isDead: boolean = false; // 是否已死亡
 
     private healthBarFill: Node = null; // 血条填充部分节点
+    private whiteHealthBarFill: Node = null; // 新增白色过渡血条
     /**血条最大长度 */
     private healthBarMaxWidth = 0;
+    private previousHealthPercent: number = 1; // 记录上次血量百分比
 
     private animationNode: Node = null; // 动画节点
     private attackRangeNode: Node = null; // 碰撞节点
@@ -32,6 +34,8 @@ export class EnemyManager extends Component {
         this.node["pid"] = "enemy";
         //初始动画节点
         this.animationNode = find("anim", this.node);
+        const scale = this.animationNode.scale;
+        this.animationNode.setScale(new Vec3(-Math.abs(scale.x) * this.moveDirection, scale.y, scale.z))
         // 初始化敌人数据模型
         this.enemyModel = new EnemyModel();
         // 初始化攻击范围检测
@@ -67,6 +71,41 @@ export class EnemyManager extends Component {
         if (!this.targetHero && !this.isAttacking) {
             this.move(deltaTime);
         }
+    }
+
+    /**
+    * 初始化血条
+    */
+    private initHealthBar(): void {
+        this.healthBarFill = find("healthBar/Fill", this.node);
+        this.whiteHealthBarFill = find("healthBar/WhiteFill", this.node);
+        this.healthBarMaxWidth = this.healthBarFill.getComponent(UITransform).width;
+        // 初始化白色血条
+        if (this.whiteHealthBarFill) {
+            const whiteTransform = this.whiteHealthBarFill.getComponent(UITransform);
+            whiteTransform.width = this.healthBarMaxWidth;
+        }
+        this.updateHealthBar();
+    }
+
+    /**
+     * 更新血条显示
+     */
+    private updateHealthBar(): void {
+        if (!this.healthBarFill || !this.enemyModel) return;
+
+        const healthPercent = this.enemyModel.currentHp / this.enemyModel.maxHp;
+        const uiTransform = this.healthBarFill.getComponent(UITransform);
+
+        // 血量减少时触发白色过渡动画
+        if (healthPercent < this.previousHealthPercent) {
+            BaseBattleHelper.showDamageEffect(this.whiteHealthBarFill, this.healthBarMaxWidth, this.previousHealthPercent, healthPercent)
+        }
+
+        if (uiTransform) {
+            uiTransform.width = this.healthBarMaxWidth * healthPercent;
+        }
+        this.previousHealthPercent = healthPercent;
     }
 
     /**
@@ -168,13 +207,14 @@ export class EnemyManager extends Component {
         const targetPos = this.targetHero.position;
         const selfPos = this.node.position;
 
+        const scale = this.animationNode.scale;
         // 根据目标位置调整朝向
         if (targetPos.x > selfPos.x) {
             // 目标在右边，设置为正向
-            this.animationNode.scale = new Vec3(-Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
+            this.animationNode.scale = new Vec3(-Math.abs(scale.x), scale.y, scale.z);
         } else {
             // 目标在左边，设置为反向
-            this.animationNode.scale = new Vec3(Math.abs(this.node.scale.x), this.node.scale.y, this.node.scale.z);
+            this.animationNode.scale = new Vec3(Math.abs(scale.x), scale.y, scale.z);
         }
     }
 
@@ -196,7 +236,7 @@ export class EnemyManager extends Component {
         this.isAttacking = false;
 
         // 播放待机动画
-        this.playAnimation('stand');
+        this.playAnimation('idle');
     }
 
     /**
@@ -232,7 +272,6 @@ export class EnemyManager extends Component {
      */
     private move(deltaTime: number): void {
         if (!this.enemyModel) return;
-
         const currentPos = this.node.position;
         const newPos = new Vec3(
             currentPos.x + (this.enemyModel.moveSpeed * deltaTime) * this.moveDirection,
@@ -240,64 +279,30 @@ export class EnemyManager extends Component {
             currentPos.z
         );
         this.node.setPosition(newPos);
-
         // 播放移动动画
-        this.playAnimation('walk');
+        this.playAnimation('run');
     }
-
     /**
      * 播放动画
      * @param animName 动画名称
      */
-    private playAnimation(animName: string): void {
-
+    private playAnimation(animName: string): sp.spine.TrackEntry | null {
         if (animName == "hit") {
-            // log("播放动画 - enemy", animName);
-            return
+            return null
         }
-
-
-        if (!this.animationNode) return;
-
-        // const
-
+        if (!this.animationNode) return null;
         const skeleton: sp.Skeleton = this.animationNode.getComponent(sp.Skeleton);
         const nowAnimName = skeleton.animation;
-        if (nowAnimName === animName) return;
-        // 播放指定动画
-        if (animName) {
+        if (animName == "run") {
+            if (nowAnimName === animName) {
+                return null
+            }
             skeleton.setAnimation(0, animName, true);
+            return null;
         }
+        const track = skeleton.setAnimation(0, animName, false);
+        return track;
     }
-
-    /**
-     * 初始化血条
-     */
-    private initHealthBar(): void {
-        this.healthBarFill = find("healthBar/Fill", this.node);
-        this.healthBarMaxWidth = this.healthBarFill.getComponent(UITransform).width;
-        if (!this.healthBarFill) return;
-        // 确保血条初始状态是满的
-        this.updateHealthBar();
-    }
-
-    /**
-     * 更新血条显示
-     */
-    private updateHealthBar(): void {
-        if (!this.healthBarFill || !this.enemyModel) return;
-
-        // 计算血量百分比
-        const healthPercent = this.enemyModel.currentHp / this.enemyModel.maxHp;
-
-        // 更新血条填充宽度
-        const uiTransform = this.healthBarFill.getComponent(UITransform);
-        if (uiTransform) {
-            const maxWidth = this.healthBarMaxWidth;
-            uiTransform.width = maxWidth * healthPercent;
-        }
-    }
-
     /**
      * 受到伤害
      * @param damage 伤害值
@@ -324,26 +329,22 @@ export class EnemyManager extends Component {
      */
     private die(): void {
         if (this.isDead) return;
-
         this.isDead = true;
-
-        // 播放死亡动画
-        this.playAnimation('dead');
-
         // 禁用碰撞和行为
         this.isAttacking = false;
-
-        // 获取奖励
-        const rewards = this.enemyModel.getRewards();
-
-        // 通知游戏管理器敌人死亡，提供奖励
-        // 这里可以发送事件或直接调用游戏管理器
-        // 例如: GameManager.getInstance().onEnemyDefeated(rewards);
-
-        // 延迟销毁敌人节点
-        this.scheduleOnce(() => {
-            this.node.destroy();
-        }, 1); // 2秒后销毁，给死亡动画播放的时间
+        // 播放死亡动画
+        const track = this.playAnimation('dead');
+        const skeleton: sp.Skeleton = this.animationNode.getComponent(sp.Skeleton);
+        skeleton.setTrackCompleteListener(track, () => {
+            // 获取奖励
+            // const rewards = this.enemyModel.getRewards();
+            // 通知游戏管理器敌人死亡，提供奖励
+            // 这里可以发送事件或直接调用游戏管理器
+            // 例如: GameManager.getInstance().onEnemyDefeated(rewards);
+            if (this.node) {
+                this.node.destroy();
+            }
+        })
     }
 
     /**

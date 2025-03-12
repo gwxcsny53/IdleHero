@@ -6,7 +6,7 @@ export class ToastHelper {
      * @param message 提示文本
      * @param duration 持续时间(秒)，默认2秒
      */
-    public static show(message: string, duration: number = 2): void {
+    public static show(message: string, duration: number = 2, callback?: Function): void {
         // 获取或创建 Canvas
         const canvas = find('Canvas');
         if (!canvas) return;
@@ -52,6 +52,9 @@ export class ToastHelper {
             .delay(duration)
             .call(() => {
                 toastNode.destroy();
+                if (callback) {
+                    callback()
+                }
             })
             .start();
     }

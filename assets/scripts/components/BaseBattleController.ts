@@ -1,7 +1,8 @@
-import { _decorator, Component, Node, instantiate, Prefab, Vec3, log, game, Sprite, Color } from 'cc';
+import { _decorator, Component, Node, instantiate, Prefab, Vec3, log, game, Sprite, Color, ProgressBar, Label } from 'cc';
 import { EnemyManager } from '../manager/EnemyManager';
 import { HeroManager } from '../manager/HeroManager';
 import { ToastHelper } from '../utils/ToastHelper';
+import { SceneManager } from '../manager/SceneManager';
 const { ccclass, property } = _decorator;
 
 /**
@@ -34,10 +35,76 @@ export class BaseBattleController extends Component {
     pointItemPrefab: Prefab = null; // 关卡显示项预制体
 
     private pointItems: Node[] = []; // 关卡显示项节点数组
+    private battleData: any = null; // 关卡显示项节点数组
 
     start() {
+        // 获取从主场景传递的参数
+        const params = SceneManager.getInstance().getSceneParams();
+        if (params) {
+            this.initBattleScene(params);
+            this.battleData = params;
+            // 初始化战斗场景
+            // 清除场景参数
+            SceneManager.getInstance().clearSceneParams();
+        }
+        // 预加载主场景，为返回做准备
+        // this.preloadIndexScene();
+    }
+
+    private initBattleScene(params: any): void {
+        console.log('初始化战斗场景，参数:', params);
         this.initPointDisplay();
         this.initBattle();
+    }
+
+    /**
+    * 预加载主场景
+    */
+    preloadIndexScene() {
+        // 在适当时机预加载主场景，提高返回速度
+        SceneManager.getInstance().preloadScene(
+            SceneManager.SCENE_INDEX,
+            (progress) => {
+                // 可以在这里更新预加载进度，也可以不显示
+                console.log(`主场景预加载进度: ${progress * 100}%`);
+            }
+        );
+    }
+
+    /**
+  * 返回主场景
+  */
+    returnToIndex() {
+        // 显示加载界面
+        this.showLoading(true);
+        // 准备返回主场景的数据
+        const returnParams = {
+            // 例如: 战斗结果、获得的资源等
+            battleResult: 'victory',
+            rewards: {
+                // 奖励数据
+            }
+        };
+        // 返回主场景
+        SceneManager.getInstance().returnToIndex(
+            returnParams,
+            (progress) => {
+                // 更新加载进度
+                // if (this.loadingBar) {
+                //     this.loadingBar.progress = progress;
+                // }
+                // if (this.loadingLabel) {
+                //     this.loadingLabel.string = `加载中... ${Math.floor(progress * 100)}%`;
+                // }
+            }
+        );
+    }
+
+    /**
+     * 显示/隐藏加载界面
+     */
+    showLoading(show: boolean) {
+
     }
 
     update(deltaTime: number) {
@@ -101,7 +168,11 @@ export class BaseBattleController extends Component {
 
         const enemyManager = enemyNode.getComponent(EnemyManager);
         if (enemyManager) {
+
             this.enemies.push(enemyManager);
+            if (position.x < 0) {
+                enemyManager.moveDirection = 1;
+            }
         }
 
         return enemyManager;
@@ -179,12 +250,18 @@ export class BaseBattleController extends Component {
 
     /**
      * 开始下一波战斗
+     * 根据关卡数生成新的敌人
      */
     protected startNextWave(): void {
         log("next wave");
         this.isWaveComplete = false;
-        // 可以在这里根据关卡数生成新的敌人
-        this.spawnEnemy(new Vec3(400, 0, 0));
+        if (this.point == 2) {
+            this.spawnEnemy(new Vec3(400, 0, 0));
+            this.spawnEnemy(new Vec3(-900, 0, 0));
+        } else if (this.point == 3) {
+            this.spawnEnemy(new Vec3(500, 0, 0));
+            // this.spawnEnemy(new Vec3(400, 0, 0));
+        }
     }
 
     /**
@@ -256,7 +333,9 @@ export class BaseBattleController extends Component {
         this.isBattleActive = false;
         log("battle complete!");
         // 这里可以添加通关奖励或者切换场景等逻辑
-        ToastHelper.show("battle complete!");
+        ToastHelper.show("battle complete!", 0.5, () => {
+            this.returnToIndex();
+        });
         this.clearBattleField()
     }
 }

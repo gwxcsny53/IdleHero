@@ -1,0 +1,55 @@
+
+guai_kulou.png
+size: 1024,256
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+daoguang
+  rotate: true
+  xy: 2, 55
+  size: 198, 262
+  orig: 198, 262
+  offset: 0, 0
+  index: -1
+shenti
+  rotate: true
+  xy: 266, 120
+  size: 133, 207
+  orig: 133, 207
+  offset: 0, 0
+  index: -1
+toukui
+  rotate: false
+  xy: 322, 28
+  size: 185, 90
+  orig: 187, 92
+  offset: 1, 1
+  index: -1
+xiaodun
+  rotate: false
+  xy: 475, 157
+  size: 90, 96
+  orig: 93, 99
+  offset: 1, 1
+  index: -1
+xiaojian
+  rotate: true
+  xy: 2, 2
+  size: 51, 139
+  orig: 53, 142
+  offset: 1, 2
+  index: -1
+yan
+  rotate: false
+  xy: 266, 64
+  size: 54, 54
+  orig: 54, 54
+  offset: 0, 0
+  index: -1
+yingzi
+  rotate: false
+  xy: 143, 38
+  size: 145, 15
+  orig: 147, 17
+  offset: 1, 1
+  index: -1
